@@ -217,7 +217,6 @@
 </div>
 
 <script>
-  // ضع رابط Google Apps Script الذي ينتهي بـ /exec هنا
   const API_URL = "https://script.google.com/macros/s/AKfycbzSE8UbK6-mwSYh5Y3jPLggQeDfcAomFNr5ObGLtKLfZj0fbhK-iXb-SIKtLdUzZYc/exec";
 
   let currentUser = null;
@@ -227,9 +226,10 @@
   let historyData = [];
 
   async function callAPI(data) {
-    const response = await fetch(API_URL, {
-      method: "POST",
-      body: JSON.stringify(data)
+    const url = `${API_URL}?payload=${encodeURIComponent(JSON.stringify(data))}`;
+    const response = await fetch(url, {
+      method: "GET",
+      redirect: "follow"
     });
     return await response.json();
   }
@@ -288,7 +288,7 @@
     } catch (e) {
       btn.disabled = false;
       btn.innerText = 'تسجيل الدخول';
-      document.getElementById('loginError').innerText = 'تعذر الاتصال بالسيرفر، تأكد من الإنترنت';
+      document.getElementById('loginError').innerText = 'تعذر الاتصال بالسيرفر، تأكد من نشر New Version في Apps Script';
     }
   }
 
