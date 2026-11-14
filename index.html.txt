@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="ar" dir="rtl">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>طنطا كار | بوابة الاستقطاعات</title>
+  <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.rtl.min.css" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Cairo:wght@400;600;700;800&display=swap" rel="stylesheet">
+  <style>
+    :root { --primary: #ff5a00; --primary-dark: #d94c00; --dark-bg: #1e293b; }
+    body { font-family: 'Cairo', sans-serif; background-color: #f1f5f9; color: #1e293b; }
+    .login-wrapper { min-height: 100vh; background: linear-gradient(135deg, #1e293b 0%, #0f172a 100%); }
+    .login-card { border: none; border-radius: 16px; box-shadow: 0 20px 40px rgba(0,0,0,0.3); background: #fff; }
+    .brand-logo { width: 60px; height: 60px; background: var(--primary); color: #fff; border-radius: 14px; display: flex; align-items: center; justify-content: center; font-size: 26px; font-weight: 800; margin: 0 auto 15px; }
+    .top-navbar { background: var(--dark-bg); color: #fff; padding: 14px 0; box-shadow: 0 4px 12px rgba(0,0,0,0.1); }
+    .card-modern { border: none; border-radius: 14px; box-shadow: 0 4px 20px rgba(0,0,0,0.04); background: #fff; }
+    .btn-orange { background-color: var(--primary); border-color: var(--primary); color: #fff; font-weight: 700; border-radius: 10px; padding: 10px 20px; transition: 0.2s; }
+    .btn-orange:hover { background-color: var(--primary-dark); color: #fff; }
+    .nav-pills .nav-link { color: #64748b; font-weight: 700; border-radius: 10px; padding: 12px; }
+    .nav-pills .nav-link.active { background-color: var(--dark-bg); color: #fff; }
+    .bulk-textarea { font-family: 'Cairo', monospace; font-size: 15px; border: 2px dashed #cbd5e1; border-radius: 12px; background: #f8fafc; }
+    .bulk-textarea:focus { border-color: var(--primary); background: #fff; box-shadow: none; }
+    .badge-pending { background-color: #fef3c7; color: #b45309; border: 1px solid #f59e0b; }
+    .badge-uploaded { background-color: #dcfce7; color: #15803d; border: 1px solid #22c55e; }
+    .badge-rejected { background-color: #fee2e2; color: #b91c1c; border: 1px solid #ef4444; }
+  </style>
+</head>
+<body>
+
+<div id="loginScreen" class="login-wrapper d-flex justify-content-center align-items-center p-3">
+  <div class="login-card p-4 p-md-5" style="width: 100%; max-width: 420px;">
+    <div class="brand-logo">TC</div>
+    <div class="text-center mb-4">
+      <h4 class="fw-bold mb-1">مكتب طنطا كار</h4>
+      <p class="text-muted small">بوابة استقطاعات المشرفين ومتابعة الرفع</p>
+    </div>
+
+    <div class="mb-3">
+      <label class="form-label fw-bold small">اختر الزون / الإدارة</label>
+      <select id="zoneSelect" class="form-select form-select-lg">
+        <option value="">جاري الاتصال بالنظام...</option>
+      </select>
+    </div>
+
+    <div class="mb-4">
+      <label class="form-label fw-bold small">كلمة المرور (الباسورد)</label>
+      <input type="password" id="loginPass" class="form-control form-control-lg" placeholder="••••••••" onkeypress="if(event.key==='Enter') handleLogin()">
+    </div>
+
+    <button onclick="handleLogin()" id="loginBtn" class="btn btn-orange btn-lg w-100">تسجيل الدخول</button>
+    <div id="loginError" class="text-danger text-center small fw-bold mt-3"></div>
+  </div>
+</div>
+
+<div id="mainApp" class="d-none">
+  <div class="top-navbar mb-4">
+    <div class="container d-flex justify-content-between align-items-center">
+      <div class="d-flex align-items-center gap-2">
+        <span class="badge bg-warning text-dark fw-bold px-2 py-1">Tanta Car</span>
+        <h5 class="mb-0 fw-bold">نظام الاستقطاعات</h5>
+      </div>
+      <div class="d-flex align-items-center gap-2">
+        <span id="userBadge" class="badge bg-light text-dark px-3 py-2 fw-bold"></span>
+        <button onclick="location.reload()" class="btn btn-outline-light btn-sm">خروج</button>
+      </div>
+    </div>
+  </div>
+
+  <div class="container pb-5">
+    <div id="adminPortalControl" class="card-modern p-3 mb-4 border-start border-4 border-warning d-none">
+      <div class="row align-items-center g-3">
+        <div class="col-md-4">
+          <div class="d-flex align-items-center gap-2">
+            <span class="fw-bold">حالة استقبال الدفعات:</span>
+            <span id="adminStatusBadge" class="badge fs-6"></span>
+          </div>
+        </div>
+        <div class="col-md-5">
+          <input type="text" id="closedMessageInput" class="form-control form-control-sm" placeholder="رسالة الإغلاق للمشرفين">
+        </div>
+        <div class="col-md-3 text-end">
+          <button id="togglePortalBtn" onclick="handleTogglePortal()" class="btn btn-sm w-100 fw-bold"></button>
+        </div>
+      </div>
+    </div>
+
+    <ul class="nav nav-pills nav-fill mb-4 bg-white p-2 rounded-3 shadow-sm">
+      <li class="nav-item" id="tabNewContainer">
+        <button class="nav-link active" id="newTabBtn" onclick="switchTab('new')">📤 رفع استقطاعات جديدة</button>
+      </li>
+      <li class="nav-item">
+        <button class="nav-link" id="historyTabBtn" onclick="switchTab('history')">📋 سجل الاستقطاعات السابقة</button>
+      </li>
+    </ul>
+
+    <div id="newBatchSection">
+      <div id="closedAlertBox" class="card-modern p-5 text-center d-none">
+        <div style="font-size: 50px;">🔒</div>
+        <h4 class="fw-bold text-danger mt-2">باب رفع الاستقطاعات مغلق حالياً</h4>
+        <p id="closedAlertText" class="text-muted fs-5 mt-2"></p>
+        <button onclick="switchTab('history')" class="btn btn-dark mt-3 px-4">مراجعة سجل استقطاعاتك السابقة</button>
+      </div>
+
+      <div id="openBatchForm" class="card-modern p-4 mb-4">
+        <div class="d-flex justify-content-between align-items-center mb-3">
+          <h6 class="fw-bold mb-0">1. الصق قائمة الطيارين (من الواتس أو الإكسل)</h6>
+          <button onclick="clearInput()" class="btn btn-sm btn-outline-secondary">مسح القائمة</button>
+        </div>
+
+        <div class="row g-3">
+          <div class="col-md-8">
+            <textarea id="bulkInput" rows="5" class="form-control bulk-textarea p-3" 
+              placeholder="مثال:&#10;1217367 500&#10;1213 - 350 باوتشات&#10;456789 سوالب 200" 
+              oninput="parseBulkData()"></textarea>
+          </div>
+          <div class="col-md-4 d-flex flex-column justify-content-between">
+            <div>
+              <label class="form-label fw-bold small">السبب الافتراضي</label>
+              <select id="defaultReason" class="form-select mb-3" onchange="parseBulkData()">
+                <option value="باوتشات">باوتشات</option>
+                <option value="سلف">سلف</option>
+                <option value="سوالب">سوالب</option>
+              </select>
+            </div>
+            <div class="bg-light p-3 rounded-3 border">
+              <div class="d-flex justify-content-between mb-2">
+                <span class="text-muted small">عدد الطيارين:</span>
+                <strong id="totalCount" class="fs-5 text-dark">0</strong>
+              </div>
+              <div class="d-flex justify-content-between">
+                <span class="text-muted small">إجمالي المبالغ:</span>
+                <strong id="totalAmount" class="fs-5 text-success">0 ج.م</strong>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h6 class="fw-bold mb-2">2. مراجعة وتعديل البيانات قبل الإرسال:</h6>
+          <div class="table-responsive">
+            <table class="table table-bordered align-middle text-center mb-3">
+              <thead class="table-light">
+                <tr>
+                  <th>ID الطيار</th>
+                  <th>اسم الطيار</th>
+                  <th style="width: 130px;">المبلغ</th>
+                  <th style="width: 130px;">السبب</th>
+                  <th style="width: 50px;">حذف</th>
+                </tr>
+              </thead>
+              <tbody id="previewTableBody">
+                <tr><td colspan="5" class="text-muted py-3">البيانات التي ستلصقها بالأعلى ستظهر هنا تلقائياً...</td></tr>
+              </tbody>
+            </table>
+          </div>
+          <button onclick="submitData()" id="submitBtn" class="btn btn-orange btn-lg w-100 shadow-sm">
+            🚀 اعتماد ورفع الدفعة للإدارة
+          </button>
+        </div>
+      </div>
+    </div>
+
+    <div id="historySection" class="d-none">
+      <div class="card-modern p-4">
+        <div class="row g-2 mb-3">
+          <div class="col-md-4">
+            <input type="text" id="searchInput" class="form-control" placeholder="🔍 بحث برقم ID أو الاسم..." onkeyup="renderHistory()">
+          </div>
+          <div class="col-md-3">
+            <select id="filterStatus" class="form-select" onchange="renderHistory()">
+              <option value="ALL">كل الحالات</option>
+              <option value="قيد المراجعة">قيد المراجعة</option>
+              <option value="تم الرفع">تم الرفع</option>
+              <option value="لم يرفع">لم يرفع</option>
+            </select>
+          </div>
+          <div class="col-md-3">
+            <select id="filterReason" class="form-select" onchange="renderHistory()">
+              <option value="ALL">كل الأسباب</option>
+              <option value="باوتشات">باوتشات</option>
+              <option value="سلف">سلف</option>
+              <option value="سوالب">سوالب</option>
+            </select>
+          </div>
+          <div class="col-md-2">
+            <button onclick="loadHistory()" class="btn btn-dark w-100">تحديث ↻</button>
+          </div>
+        </div>
+
+        <div class="row g-2 mb-3 text-center">
+          <div class="col-4"><div class="p-2 rounded bg-light border fw-bold small">الإجمالي: <span id="histTotal">0</span></div></div>
+          <div class="col-4"><div class="p-2 rounded bg-success bg-opacity-10 text-success border border-success fw-bold small">تم الرفع: <span id="histUploaded">0</span></div></div>
+          <div class="col-4"><div class="p-2 rounded bg-danger bg-opacity-10 text-danger border border-danger fw-bold small">لم يرفع: <span id="histRejected">0</span></div></div>
+        </div>
+
+        <div class="table-responsive">
+          <table class="table table-hover align-middle text-center small">
+            <thead class="table-dark">
+              <tr>
+                <th>التاريخ</th>
+                <th class="admin-col d-none">الزون / المشرف</th>
+                <th>ID الطيار</th>
+                <th>الاسم</th>
+                <th>المبلغ</th>
+                <th>السبب</th>
+                <th>الحالة</th>
+                <th>ملاحظة الإدارة</th>
+                <th class="admin-col d-none">قرار الإدارة</th>
+              </tr>
+            </thead>
+            <tbody id="historyTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+  // ضع رابط Google Apps Script الذي ينتهي بـ /exec هنا
+  const API_URL = "https://script.google.com/macros/s/AKfycbzSE8UbK6-mwSYh5Y3jPLggQeDfcAomFNr5ObGLtKLfZj0fbhK-iXb-SIKtLdUzZYc/exec";
+
+  let currentUser = null;
+  let portalState = { isOpen: true, status: 'OPEN', message: '' };
+  let driversMap = {};
+  let parsedItems = [];
+  let historyData = [];
+
+  async function callAPI(data) {
+    const response = await fetch(API_URL, {
+      method: "POST",
+      body: JSON.stringify(data)
+    });
+    return await response.json();
+  }
+
+  window.onload = async function() {
+    try {
+      const res = await callAPI({ action: 'init' });
+      const sel = document.getElementById('zoneSelect');
+      sel.innerHTML = '<option value="">-- اختر الزون الخاص بك --</option>';
+      (res.zones || []).forEach(z => {
+        sel.innerHTML += `<option value="${z}">${z}</option>`;
+      });
+      sel.innerHTML += '<option value="ADMIN">🔒 دخول الإدارة العامة</option>';
+    } catch (e) {
+      document.getElementById('zoneSelect').innerHTML = '<option value="ADMIN">🔒 دخول الإدارة العامة</option>';
+    }
+  };
+
+  async function handleLogin() {
+    const zone = document.getElementById('zoneSelect').value;
+    const pass = document.getElementById('loginPass').value;
+    if (!zone || !pass) {
+      document.getElementById('loginError').innerText = 'يرجى اختيار الزون وإدخال الباسورد';
+      return;
+    }
+    const btn = document.getElementById('loginBtn');
+    btn.disabled = true;
+    btn.innerText = 'جاري الدخول...';
+
+    try {
+      const res = await callAPI({ action: 'login', zone, password: pass });
+      btn.disabled = false;
+      btn.innerText = 'تسجيل الدخول';
+
+      if (res.success) {
+        currentUser = res;
+        portalState = res.portal;
+        document.getElementById('loginScreen').classList.add('d-none');
+        document.getElementById('mainApp').classList.remove('d-none');
+        document.getElementById('userBadge').innerText = `${res.name} | ${res.zone}`;
+        
+        if (res.role === 'admin') {
+          document.getElementById('tabNewContainer').classList.add('d-none');
+          document.getElementById('adminPortalControl').classList.remove('d-none');
+          document.querySelectorAll('.admin-col').forEach(el => el.classList.remove('d-none'));
+          updateAdminPortalUI();
+          switchTab('history');
+        } else {
+          applySupervisorPortalUI();
+          callAPI({ action: 'getDrivers' }).then(map => { driversMap = map; });
+          callAPI({ action: 'getHistory', role: res.role, zone: res.zone }).then(data => { historyData = data; });
+        }
+      } else {
+        document.getElementById('loginError').innerText = res.message;
+      }
+    } catch (e) {
+      btn.disabled = false;
+      btn.innerText = 'تسجيل الدخول';
+      document.getElementById('loginError').innerText = 'تعذر الاتصال بالسيرفر، تأكد من الإنترنت';
+    }
+  }
+
+  function updateAdminPortalUI() {
+    const badge = document.getElementById('adminStatusBadge');
+    const btn = document.getElementById('togglePortalBtn');
+    document.getElementById('closedMessageInput').value = portalState.message;
+
+    if (portalState.isOpen) {
+      badge.className = 'badge bg-success fs-6';
+      badge.innerText = '🟢 مفتوح';
+      btn.className = 'btn btn-danger btn-sm w-100 fw-bold';
+      btn.innerText = '🔒 إغلاق الرفع الآن';
+    } else {
+      badge.className = 'badge bg-danger fs-6';
+      badge.innerText = '🔴 مغلق';
+      btn.className = 'btn btn-success btn-sm w-100 fw-bold';
+      btn.innerText = '🔓 فتح الرفع للمشرفين';
+    }
+  }
+
+  async function handleTogglePortal() {
+    const nextStatus = portalState.isOpen ? 'CLOSED' : 'OPEN';
+    const customMsg = document.getElementById('closedMessageInput').value;
+    const btn = document.getElementById('togglePortalBtn');
+    btn.disabled = true;
+    btn.innerText = 'جاري التحديث...';
+
+    portalState = await callAPI({ action: 'togglePortal', newStatus: nextStatus, customMsg });
+    btn.disabled = false;
+    updateAdminPortalUI();
+  }
+
+  function applySupervisorPortalUI() {
+    if (!portalState.isOpen) {
+      document.getElementById('openBatchForm').classList.add('d-none');
+      document.getElementById('closedAlertBox').classList.remove('d-none');
+      document.getElementById('closedAlertText').innerText = portalState.message;
+    } else {
+      document.getElementById('openBatchForm').classList.remove('d-none');
+      document.getElementById('closedAlertBox').classList.add('d-none');
+    }
+  }
+
+  function switchTab(tab) {
+    if (tab === 'new') {
+      document.getElementById('newBatchSection').classList.remove('d-none');
+      document.getElementById('historySection').classList.add('d-none');
+      document.getElementById('newTabBtn').classList.add('active');
+      document.getElementById('historyTabBtn').classList.remove('active');
+    } else {
+      document.getElementById('newBatchSection').classList.add('d-none');
+      document.getElementById('historySection').classList.remove('d-none');
+      document.getElementById('newTabBtn').classList.remove('active');
+      document.getElementById('historyTabBtn').classList.add('active');
+      loadHistory();
+    }
+  }
+
+  function clearInput() {
+    document.getElementById('bulkInput').value = '';
+    parsedItems = [];
+    renderPreview();
+  }
+
+  function parseBulkData() {
+    const text = document.getElementById('bulkInput').value;
+    const defaultReason = document.getElementById('defaultReason').value;
+    const lines = text.split('\n');
+    parsedItems = [];
+    const seenIds = new Set();
+
+    lines.forEach(line => {
+      if (!line.trim()) return;
+      const nums = line.match(/\d+(\.\d+)?/g);
+      if (nums && nums.length >= 1) {
+        const id = nums[0];
+        const amount = nums.length >= 2 ? parseFloat(nums[1]) : 0;
+        let detectedReason = defaultReason;
+        if (line.includes('باوتش')) detectedReason = 'باوتشات';
+        else if (line.includes('سلف')) detectedReason = 'سلف';
+        else if (line.includes('سالب') || line.includes('سوالب')) detectedReason = 'سوالب';
+
+        const driverInfo = driversMap[id] || { name: 'غير مسجل' };
+        parsedItems.push({
+          id, driverName: driverInfo.name, amount, reason: detectedReason, isDuplicate: seenIds.has(id)
+        });
+        seenIds.add(id);
+      }
+    });
+    renderPreview();
+  }
+
+  function renderPreview() {
+    const tbody = document.getElementById('previewTableBody');
+    tbody.innerHTML = '';
+
+    if (parsedItems.length === 0) {
+      tbody.innerHTML = '<tr><td colspan="5" class="text-muted py-3">البيانات التي ستلصقها بالأعلى ستظهر هنا تلقائياً...</td></tr>';
+      document.getElementById('totalCount').innerText = '0';
+      document.getElementById('totalAmount').innerText = '0 ج.م';
+      return;
+    }
+
+    let total = 0;
+    parsedItems.forEach((item, index) => {
+      total += (item.amount || 0);
+      const rowClass = item.isDuplicate ? 'table-warning' : (item.amount <= 0 ? 'table-danger' : '');
+      tbody.innerHTML += `
+        <tr class="${rowClass}">
+          <td class="fw-bold">${item.id} ${item.isDuplicate ? '<span class="badge bg-danger">مكرر</span>' : ''}</td>
+          <td>${item.driverName}</td>
+          <td><input type="number" class="form-control form-control-sm text-center fw-bold" value="${item.amount || ''}" onchange="updateItem(${index}, 'amount', this.value)"></td>
+          <td>
+            <select class="form-select form-select-sm" onchange="updateItem(${index}, 'reason', this.value)">
+              <option value="باوتشات" ${item.reason === 'باوتشات' ? 'selected' : ''}>باوتشات</option>
+              <option value="سلف" ${item.reason === 'سلف' ? 'selected' : ''}>سلف</option>
+              <option value="سوالب" ${item.reason === 'سوالب' ? 'selected' : ''}>سوالب</option>
+            </select>
+          </td>
+          <td><button class="btn btn-sm btn-outline-danger" onclick="removeItem(${index})">✕</button></td>
+        </tr>`;
+    });
+
+    document.getElementById('totalCount').innerText = parsedItems.length;
+    document.getElementById('totalAmount').innerText = total.toLocaleString() + ' ج.م';
+  }
+
+  function updateItem(index, field, val) {
+    parsedItems[index][field] = field === 'amount' ? parseFloat(val) || 0 : val;
+    renderPreview();
+  }
+
+  function removeItem(index) {
+    parsedItems.splice(index, 1);
+    renderPreview();
+  }
+
+  async function submitData() {
+    if (parsedItems.length === 0) return alert('يرجى لصق بيانات الطيارين أولاً!');
+    if (parsedItems.some(i => !i.amount || i.amount <= 0)) return alert('يرجى كتابة المبلغ لجميع الطيارين.');
+
+    const btn = document.getElementById('submitBtn');
+    btn.disabled = true;
+    btn.innerText = '⚡ جاري الحفظ...';
+
+    const payload = { supervisorName: currentUser.name, zone: currentUser.zone, items: [...parsedItems] };
+    const res = await callAPI({ action: 'submitBatch', payload });
+
+    btn.disabled = false;
+    btn.innerText = '🚀 اعتماد ورفع الدفعة للإدارة';
+
+    if (res.success) {
+      const today = res.timestamp.split(' ')[0];
+      payload.items.forEach(item => {
+        historyData.unshift({
+          batchId: res.batchId, date: today, supervisor: currentUser.name, zone: currentUser.zone,
+          driverId: item.id, driverName: item.driverName, amount: item.amount,
+          reason: item.reason, status: 'قيد المراجعة', note: ''
+        });
+      });
+      clearInput();
+      document.getElementById('newBatchSection').classList.add('d-none');
+      document.getElementById('historySection').classList.remove('d-none');
+      document.getElementById('newTabBtn').classList.remove('active');
+      document.getElementById('historyTabBtn').classList.add('active');
+      renderHistory();
+    } else {
+      alert(res.message);
+      location.reload();
+    }
+  }
+
+  async function loadHistory() {
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '<tr><td colspan="9" class="py-4">جاري تحميل السجل...</td></tr>';
+    historyData = await callAPI({ action: 'getHistory', role: currentUser.role, zone: currentUser.zone });
+    renderHistory();
+  }
+
+  function renderHistory() {
+    const search = document.getElementById('searchInput').value.toLowerCase();
+    const statusFilter = document.getElementById('filterStatus').value;
+    const reasonFilter = document.getElementById('filterReason').value;
+    const tbody = document.getElementById('historyTableBody');
+    tbody.innerHTML = '';
+
+    let total = 0, uploaded = 0, rejected = 0;
+
+    historyData.filter(r => 
+      (r.driverId.includes(search) || r.driverName.toLowerCase().includes(search)) &&
+      (statusFilter === 'ALL' || r.status === statusFilter) &&
+      (reasonFilter === 'ALL' || r.reason === reasonFilter)
+    ).forEach(r => {
+      total += r.amount;
+      if (r.status === 'تم الرفع') uploaded += r.amount;
+      if (r.status === 'لم يرفع') rejected += r.amount;
+
+      let badgeClass = r.status === 'تم الرفع' ? 'badge-uploaded' : (r.status === 'لم يرفع' ? 'badge-rejected' : 'badge-pending');
+      const adminControls = currentUser.role === 'admin' ? `
+        <td>
+          <div class="btn-group btn-group-sm">
+            <button class="btn btn-success" onclick="changeStatus(${r.archRowIndex}, '${r.uid}', 'تم الرفع')">✓</button>
+            <button class="btn btn-danger" onclick="rejectPrompt(${r.archRowIndex}, '${r.uid}')">✕</button>
+          </div>
+        </td>` : '';
+      const adminSupCol = currentUser.role === 'admin' ? `<td><strong>${r.zone}</strong><br><small>${r.supervisor}</small></td>` : '';
+
+      tbody.innerHTML += `
+        <tr>
+          <td>${r.date.split(' ')[0]}</td>
+          ${adminSupCol}
+          <td class="fw-bold">${r.driverId}</td>
+          <td>${r.driverName}</td>
+          <td class="fw-bold">${r.amount}</td>
+          <td>${r.reason}</td>
+          <td><span class="badge ${badgeClass}">${r.status}</span></td>
+          <td class="text-danger">${r.note || '-'}</td>
+          ${adminControls}
+        </tr>`;
+    });
+
+    document.getElementById('histTotal').innerText = total.toLocaleString();
+    document.getElementById('histUploaded').innerText = uploaded.toLocaleString();
+    document.getElementById('histRejected').innerText = rejected.toLocaleString();
+  }
+
+  async function changeStatus(archRowIndex, uid, newStatus, adminNote = '') {
+    await callAPI({ action: 'updateStatus', archRowIndex, uid, newStatus, adminNote });
+    loadHistory();
+  }
+
+  function rejectPrompt(archRowIndex, uid) {
+    const note = prompt('اكتب سبب عدم الرفع:', 'لا يوجد رصيد كافٍ');
+    if (note !== null) changeStatus(archRowIndex, uid, 'لم يرفع', note);
+  }
+</script>
+</body>
+</html>
